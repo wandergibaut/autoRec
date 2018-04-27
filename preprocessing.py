@@ -38,7 +38,7 @@ for file in list_of_files:
 			user = entry[0]
 
 			if user == last_user:
-				temp_user_rating[entry[1]] = entry[2]#float(entry[2]) # na pos artist_id ponha o valor count
+				temp_user_rating[entry[1]-1] = entry[2] # na pos artist_id ponha o valor count
 			else:
 				last_user = user # atualiza o user
 
