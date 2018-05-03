@@ -4,19 +4,56 @@ from keras import regularizers
 import keras.backend as K
 import tensorflow as tf
 import numpy as np
+import random
 
 def autoRec_loss(y_true,y_pred):
-	zero = K.constant(0, dtype='float32')
-	where = K.not_equal(y_true, zero)
-	y_true_rectified = tf.boolean_mask(y_true, where)
-	y_pred_rectified = tf.boolean_mask(y_pred, where)
-	return K.sum((y_true - y_pred)**2)
-	#y_true = np.asarray(y_true)
-	#y_pred = np.asarray(y_pred)
-    #y_true_rectified = y_true[np.nonzero(y_true)]
-    #y_pred_rectified = y_pred[np.nonzero(y_true)] #sim ta certo
-    
-    #return K.sum((y_true_rectified - y_pred_rectified)**2)
+	zero = K.constant(0.0, dtype='float32')
+	mask = K.not_equal(y_true, zero)
+	return K.sum(K.square(tf.boolean_mask(y_true - y_pred, mask)), axis=-1)
+        #y_true_rectified = tf.boolean_mask(tf.convert_to_tensor(y_true, dtype='float32'), mask)
+	#y_pred_rectified = tf.boolean_mask(tf.convert_to_tensor(y_pred, dtype='float32'), mask)
+	#return K.reduced_sum(K.square(y_true_rectified - y_pred_rectified), axis=-1)
+	
+	
+
+        
+def split_train_test(data):
+    copyData = data
+    sliceX = round(len(data)/10) # fatias de 10%
+    test = np.full((sliceX,len(data[0,:])),0.0)
+    #tira 10% pra teste. 10% dos individuos retirados COMPLETAMENTE. Preciso ainda separar em entrada e saida
+    for i in range(sliceX):
+        index = random.randrange(len(copyData))
+        test[i]= copyData[index]
+        np.delete(copyData,index)
+        
+    train = copyData
+    return [train, test]
+
+#quebra o conjunto de validacao entre entrada e saida
+def validation_split(val, percentage):
+    val_entry = val
+    val_expect = val
+
+    for i in range(len(val)):
+        entryObservations = np.nonzero(val[i,:]) # espero q sejam os indicies
+        length = len(entryObservations[0])
+        sliceX = round(length*percentage)
+
+        for j in range(sliceX):
+            index = random.randrange(length)
+            val_entry[i,entryObservations[0][index]] = 0
+            length-=1
+
+    return [val_entry, val_expect]
+
+def test_accuracy(y_pred,y_true):
+    zero = K.constant(0, dtype='float32')
+    where = K.not_equal(y_true, zero)
+    y_true_rectified = tf.boolean_mask(y_true, where)
+    y_pred_rectified = tf.boolean_mask(y_pred, where)
+    return K.sum((y_true - y_pred)**2)
+
 
 
 list_of_files = [('foo.dat'), ('foo_friends.dat')]
@@ -41,45 +78,38 @@ for file in list_of_files:
 
         #print('sou lindo ')
         print(input_dim)
+        print(input_size)
 
 
 
-        encoding_dim = 20 #size of the encoding representation. Must tune this up
+        encoding_dim = 500 #size of the encoding representation. Must tune this up
 
         #input_dim = 20000 #ver depois
 
-
         input_data = Input(shape=(input_dim,))
 
+        #split
+        [train, test] = split_train_test(data)
+
+        print (len(train))        
+        print (len(test))
+
+
         #encoded representation
+        #encoded = Dense(round(input_dim/100), activation='sigmoid')(input_data)
+        #encoded = Dense(round(input_dim/100), activation='sigmoid')(encoded)
+        encoded = Dense(encoding_dim, activation='sigmoid', activity_regularizer=regularizers.l1(1e-5))(input_data)
+        #encoded = Dense(encoding_dim, activation='sigmoid', activity_regularizer=regularizers.l1(1e-5))(encoded)
 
+        #decoded = Dense(round(input_dim/100), activation='sigmoid')(encoded)
+        #decoded = Dense(round(input_dim/10), activation='sigmoid')(decoded)
+        decoded = Dense(input_dim, activation='linear')(encoded)
+        #decoded = Dense(input_dim, activation='linear', activity_regularizer=regularizers.l1(1e-5))(decoded)
 
-        encoded = Dense(round(input_dim/10), activation='sigmoid', kernel_regularizer=regularizers.l2(.01))(input_data)
-        encoded = Dense(round(input_dim/100), activation='sigmoid', kernel_regularizer=regularizers.l2(.01))(encoded)
-        encoded = Dense(encoding_dim, activation='sigmoid', kernel_regularizer=regularizers.l2(.1))(encoded)
-
-        decoded = Dense(round(input_dim/100), activation='sigmoid', kernel_regularizer=regularizers.l2(.01))(encoded)
-        decoded = Dense(round(input_dim/10), activation='sigmoid', kernel_regularizer=regularizers.l2(.01))(decoded)
-        decoded = Dense(input_dim, activation='linear', kernel_regularizer=regularizers.l2(.01))(decoded)
-
-
+        #, kernel_regularizer=regularizers.l2(.1)
 
         #mapping
         autoencoder = Model(input_data, decoded)
-
-
-
-
-        # this model maps an input to its encoded representation
-        #encoder = Model(input_data, encoded)
-
-
-        # create a placeholder for an encoded (32-dimensional) input
-        #encoded_input = Input(shape=(encoding_dim,))
-        # retrieve the last layer of the autoencoder model
-        #decoder_layer = autoencoder.layers[-1]
-        # create the decoder model
-        #decoder = Model(encoded_input, decoder_layer(encoded_input))
 
 
         # ver documentação keras
@@ -87,30 +117,42 @@ for file in list_of_files:
 
         ##
         #dados do treino, dividir em teste e treino corretamente
-        x_train= data
-        x_test = data
+        #x_train= data
+        #x_test = data
+
+        x_train= train
+        x_test = test       
 
         autoencoder.fit(x_train, x_train,
-                        epochs=25,
-                        batch_size=256,
+                        epochs=5,
                         shuffle=True,
-                        validation_data=(x_test, x_test))
+                        batch_size=1,#256,
+                        validation_split=0.1)
+                        #validation_data=(val, val))
 
 # encode and decode some digits
 # note that we take them from the *test* set
-        encoded_data = autoencoder.predict(x_test)
+
+        
+        [x_test, y_test] = validation_split(test, 0.2)
+
+        y_test_pred = autoencoder.predict(x_test)
         #decoded_data = decoder.predict(encoded_data)
 
-        print(encoded_data)
+        autoencoder.evaluate(x_test, y_test)
+
+        #print(encoded_data)
 
         print(max(x_test[0,:]))
-        print(max(x_test[1,:]))
+        #print(max(x_test[1,:]))
 
-        print(max(encoded_data[0,:]))
-        print(max(encoded_data[1,:]))
+        print(max(y_test_pred[0,:]))
+        #print(max(encoded_data[1,:]))
 
-        print(sum(x_test - encoded_data)/len(encoded_data[0,:]))
+        #print(sum(x_test - encoded_data)/len(encoded_data[0,:]))
+        #print('teste de precisao')
 
+        print(test_accuracy(y_test,y_test_pred))
 
 
 
