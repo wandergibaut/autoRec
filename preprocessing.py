@@ -10,7 +10,7 @@ max_users_conections = 25434 # from file
 
 #list_of_files = [('DeathsNVictories_1.txt', 'Time Evolution - simpleRL fullBase'),('DeathsNVictories_1WF.txt', 'Time Evolution - wandercogFull fullBase')]
 #list_of_files = [('../lastFM/user_artists.dat', 'simpleRL')]
-list_of_files = [('../lastFM/test.dat')]#, ('../lastFM/user_friends_test.dat')]
+list_of_files = [('../lastFM/user_artists.dat')]#, ('../lastFM/user_friends_test.dat')]
 
 #datalist = [(pylab.loadtxt(filename), label) for filename, label in list_of_files ]
 
@@ -25,7 +25,7 @@ for file in list_of_files:
                      delimiter='	')
 	#print(data)
 
-	if file == '../lastFM/test.dat':
+	if file == '../lastFM/user_artists.dat':
 
 		last_user = 2
 

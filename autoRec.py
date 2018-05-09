@@ -25,15 +25,16 @@ def split_train_test(data):
     for i in range(sliceX):
         index = random.randrange(len(copyData))
         test[i]= copyData[index]
-        np.delete(copyData,index)
-        
-    train = copyData
+        #np.delete(copyData,index)
+    #new_data= np.delete(copyData, test)
+
+    train = copyData#new_data#copyData
     return [train, test]
 
 #quebra o conjunto de validacao entre entrada e saida
 def validation_split(val, percentage):
-    val_entry = val
-    val_expect = val
+    val_entry = np.copy(val)
+    val_expect = np.copy(val)
 
     for i in range(len(val)):
         entryObservations = np.nonzero(val[i,:]) # espero q sejam os indicies
@@ -43,20 +44,23 @@ def validation_split(val, percentage):
         for j in range(sliceX):
             index = random.randrange(length)
             val_entry[i,entryObservations[0][index]] = 0
-            length-=1
+            #length-=1
 
     return [val_entry, val_expect]
 
 def test_accuracy(y_pred,y_true):
-    zero = K.constant(0, dtype='float32')
-    where = K.not_equal(y_true, zero)
-    y_true_rectified = tf.boolean_mask(y_true, where)
-    y_pred_rectified = tf.boolean_mask(y_pred, where)
-    return K.sum((y_true - y_pred)**2)
+    mask= np.nonzero(y_true)
+    y_pred_rectified = y_pred[mask]
+    y_true_rectified = y_true[mask]
+    return sum((y_true_rectified - y_pred_rectified)**2)/len(y_true)
+    #y_pred_rectified = y_pred[y_true > 0]
+    #y_true_rectified = y_true[y_true > 0]
+    
+    #return K.mean(K.square(K.sum((y_true - y_pred))))
 
 
 
-list_of_files = [('foo.dat'), ('foo_friends.dat')]
+list_of_files = [('../lastFM/fooData/foo.dat'), ('../lastFM/fooData/foo_friends.dat')]
 
 #datalist = [(pylab.loadtxt(filename), label) for filename, label in list_of_files ]
 
@@ -82,13 +86,13 @@ for file in list_of_files:
 
 
 
-        encoding_dim = 500 #size of the encoding representation. Must tune this up
+        encoding_dim = 50 #size of the encoding representation. Must tune this up
 
         #input_dim = 20000 #ver depois
 
         input_data = Input(shape=(input_dim,))
 
-        #split
+        #split NAO tah funfando direito
         [train, test] = split_train_test(data)
 
         print (len(train))        
@@ -124,11 +128,12 @@ for file in list_of_files:
         x_test = test       
 
         autoencoder.fit(x_train, x_train,
-                        epochs=5,
+                        epochs=2,
                         shuffle=True,
-                        batch_size=1,#256,
-                        validation_split=0.1)
-                        #validation_data=(val, val))
+                        batch_size=1,#,#256,
+                        #metrics=['mse'],
+                        validation_split=0.1
+                        )
 
 # encode and decode some digits
 # note that we take them from the *test* set
