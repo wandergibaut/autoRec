@@ -70,7 +70,7 @@ for file in list_of_files:
 	
 			#print(max)
 
-		np.savetxt("foo.dat", users_rating,fmt='%.4f')
+		np.savetxt("../lastFM/fooData/foo.dat", users_rating,fmt='%.4f')
 
 
 	elif file == '../lastFM/user_friends_test.dat':
@@ -110,8 +110,8 @@ for file in list_of_files:
 	##end if
 		#print(len(temp_user_weight))
 		print(temp_user_weight)
-		np.savetxt("foo_friends_matrix.dat", users_rating,fmt='%.1f')
-		np.savetxt("foo_friends.dat", temp_user_weight,fmt='%.8f')
+		np.savetxt("../lastFM/fooData/foo_friends_matrix.dat", users_rating,fmt='%.1f')
+		np.savetxt("../lastFM/fooData/foo_friends.dat", temp_user_weight,fmt='%.8f')
 
 ##end for
 

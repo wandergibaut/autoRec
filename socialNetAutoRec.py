@@ -8,14 +8,14 @@ import random
 from math import sqrt
 
 def autoRec_loss(y_true,y_pred):
-	zero = K.constant(0.0, dtype='float32')
-	mask = K.not_equal(y_true, zero)
-	return K.sum(K.square(tf.boolean_mask(y_true - y_pred, mask)), axis=-1)
+    zero = K.constant(0.0, dtype='float32')
+    mask = K.not_equal(y_true, zero)
+    return K.sum(K.square(tf.boolean_mask(y_true - y_pred, mask)), axis=-1)
         #y_true_rectified = tf.boolean_mask(tf.convert_to_tensor(y_true, dtype='float32'), mask)
-	#y_pred_rectified = tf.boolean_mask(tf.convert_to_tensor(y_pred, dtype='float32'), mask)
-	#return K.reduced_sum(K.square(y_true_rectified - y_pred_rectified), axis=-1)
-	
-	
+    #y_pred_rectified = tf.boolean_mask(tf.convert_to_tensor(y_pred, dtype='float32'), mask)
+    #return K.reduced_sum(K.square(y_true_rectified - y_pred_rectified), axis=-1)
+    
+    
 
         
 def split_train_test(data):
@@ -164,36 +164,3 @@ for file in list_of_files:
 
         print(y_testinho[mask])
         print(pred_test[mask])
-
-
-
-
-
-#evaluation here
-
-
-#rmse
-
-
-
-
-# use Matplotlib (don't ask)
-#import matplotlib.pyplot as plt
-
-#n = 10  # how many digits we will display
-#plt.figure(figsize=(20, 4))
-#for i in range(n):
-    # display original
-#    ax = plt.subplot(2, n, i + 1)
-#    plt.imshow(x_test[i].reshape(28, 28))
-#    plt.gray()
-#    ax.get_xaxis().set_visible(False)
-#    ax.get_yaxis().set_visible(False)
-
-    # display reconstruction
-#    ax = plt.subplot(2, n, i + 1 + n)
-#    plt.imshow(decoded_imgs[i].reshape(28, 28))
-#    plt.gray()
-#    ax.get_xaxis().set_visible(False)
-#    ax.get_yaxis().set_visible(False)
-#plt.show()
