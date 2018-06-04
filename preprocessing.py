@@ -10,7 +10,7 @@ max_users_conections = 25434 # from file
 
 #list_of_files = [('DeathsNVictories_1.txt', 'Time Evolution - simpleRL fullBase'),('DeathsNVictories_1WF.txt', 'Time Evolution - wandercogFull fullBase')]
 #list_of_files = [('../lastFM/user_artists.dat', 'simpleRL')]
-list_of_files = [('../lastFM/user_artists.dat')]#, ('../lastFM/user_friends_test.dat')]
+list_of_files = [('../lastFM/user_friends.dat')]#('../lastFM/user_artists.dat'), ('../lastFM/user_friends.dat')]
 
 #datalist = [(pylab.loadtxt(filename), label) for filename, label in list_of_files ]
 
@@ -73,20 +73,18 @@ for file in list_of_files:
 		np.savetxt("../lastFM/fooData/foo.dat", users_rating,fmt='%.4f')
 
 
-	elif file == '../lastFM/user_friends_test.dat':
+	elif file == '../lastFM/user_friends.dat':
 
 		print('sou lindo!')
 
 		#temp_all_users_rating = []
 
-		temp_user_rating = np.full((users_number,users_number),0) #vetor vazio para rank de artistas por usuario
+		temp_user_friend_matrix = np.full((users_number,users_number),0.0) #vetor vazio para rank de artistas por usuario
 		#print(temp_user_rating)
 
 		for entry in data:
-			#user = entry[0]
 
-			#if user == last_user:
-			temp_user_rating[entry[0],entry[1]] = 1 #f
+			temp_user_friend_matrix[entry[0]-1,entry[1]-1] = 1 #f
 		#	else:
 		#		last_user = user # atualiza o user
 
@@ -100,18 +98,34 @@ for file in list_of_files:
 
 
 		#users_rating = np.asarray(temp_all_users_rating)
-		users_rating = temp_user_rating
+		users_friend_matrix = temp_user_friend_matrix
 
-		print(users_rating)
+		print(users_friend_matrix)
 
 		temp_user_weight = np.full((users_number),0.0)
 		for i in range(users_number):
-			temp_user_weight[i] = sum(users_rating[i,:])/max_users_conections
+			temp_user_weight[i] = sum(users_friend_matrix[i,:])/max_users_conections
 	##end if
 		#print(len(temp_user_weight))
+
+		user_friend_weights = np.copy(users_friend_matrix)
+		best_friend_index = np.full((users_number),0.0)
+
+		for i in range(users_number):
+			for j in range(users_number):
+				if user_friend_weights[i,j] == 1:
+					user_friend_weights[i,j] = temp_user_weight[j]
+					user_friend_weights[j,i] = temp_user_weight[i]
+
+		for i in range (users_number):
+			best_friend_index[i] = np.argmax(user_friend_weights[i,:])
+
 		print(temp_user_weight)
-		np.savetxt("../lastFM/fooData/foo_friends_matrix.dat", users_rating,fmt='%.1f')
-		np.savetxt("../lastFM/fooData/foo_friends.dat", temp_user_weight,fmt='%.8f')
+		np.savetxt("../lastFM/fooData/friends_matrix.dat", users_friend_matrix,fmt='%.1f')
+		np.savetxt("../lastFM/fooData/friends_weights.dat", temp_user_weight,fmt='%.8f')
+		np.savetxt("../lastFM/fooData/friends_matrix_weights.dat", user_friend_weights,fmt='%.8f')
+		#uso
+		np.savetxt("../lastFM/fooData/best_friend_index.dat", best_friend_index,fmt='%.1f')
 
 ##end for
 

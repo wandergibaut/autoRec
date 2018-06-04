@@ -1,4 +1,4 @@
-from keras.layers import Input, Dense
+from keras.layers import Input, Dense, concatenate
 from keras.models import Model
 from keras import regularizers
 import keras.backend as K
@@ -18,27 +18,19 @@ def autoRec_loss(y_true,y_pred):
     
 
         
-def split_train_test(Input, Output):
-    copyInput = np.copy(Input)
-    copyInput = np.copy(Output)
-    sliceX = round(len(Input)/10) # fatias de 10%
-    in_test = np.full((sliceX,len(Input[0,:])),0.0)
-    out_test = np.full((sliceX,len(Output[0,:])),0.0)
+def split_train_test(data):
+    copyData = np.copy(data)
+    sliceX = round(len(data)/10) # fatias de 10%
+    test = np.full((sliceX,len(data[0,:])),0.0)
     #tira 10% pra teste. 10% dos individuos retirados COMPLETAMENTE. Preciso ainda separar em entrada e saida
     for i in range(sliceX):
-        index = random.randrange(len(copyInput))
-        in_test[i]= copyInput[index]
-        np.delete(copyInput,index)
-
-        out_test[i]= copyOutput[index]
-        np.delete(copyOutput,index)
-
+        index = random.randrange(len(copyData))
+        test[i]= copyData[index]
+        np.delete(copyData,index)
     #new_data= np.delete(copyData, test)
 
-    train_in = copyInput
-    train_out = copyOutput
-
-    return [train_in, train_ouy, in_test, out_test]
+    train = copyData#new_data#copyData
+    return [train, test]
 
 #quebra o conjunto de validacao entre entrada e saida
 def validation_split(val, percentage):
@@ -57,6 +49,24 @@ def validation_split(val, percentage):
 
     return [val_entry, val_expect]
 
+
+def test_split(val, value):
+    val_entry = np.copy(val)
+    val_expect = np.copy(val)
+
+    for i in range(len(val)):
+        entryObservations = np.nonzero(val[i,:]) # espero q sejam os indicies
+        length = len(entryObservations[0])
+        sliceX = value
+        if length != 0:
+            for j in range(sliceX):
+                index = random.randrange(length)
+                val_entry[i,entryObservations[0][index]] = 0
+                #length-=1
+
+    return [val_entry, val_expect]
+
+
 def test_accuracy(y_pred,y_true):
     mask = np.nonzero(y_true)
     y_pred_rectified = y_pred[mask]
@@ -74,100 +84,117 @@ def test_accuracy(y_pred,y_true):
 #datalist = [(pylab.loadtxt(filename), label) for filename, label in list_of_files ]
 
 
-if 1:
-    Output = np.genfromtxt('../lastFM/fooData/foo.dat',
+user_best_friend = np.genfromtxt('../lastFM/fooData/best_friend_index.dat',
                      dtype=None,
                      delimiter=' ')
 
-    in_put = np.genfromtxt('../lastFM/fooData/social_autoRec_input.dat',
+user_artist_data_zeros = np.genfromtxt('../lastFM/fooData/foo_with_zeros.dat',
                      dtype=None,
                      delimiter=' ')
     #print(data)
 
     
 
-    if 1:
+
         #data = np.asarray(data[0])
         #print(data)
-        input_size= len(in_put)
-        input_dim = len(in_put[0,:])
-        output_dim = len(Output[0,:])
+input_size= len(user_artist_data_zeros)
+input_dim = len(user_artist_data_zeros[0,:])
+output_dim = len(user_artist_data_zeros[0,:])
 
         #print('sou lindo ')
-        print(input_dim)
-        print(input_size)
+print(input_dim)
+print(input_size)
 
 
 
-        encoding_dim = 50 #size of the encoding representation. Must tune this up
+encoding_dim = 50 #size of the encoding representation. Must tune this up
 
         #input_dim = 20000 #ver depois
 
-        input_data = Input(shape=(input_dim,))
+
 
         #split NAO tah funfando direito
-        [train_input, train_output, test_input, test_output] = split_train_test(in_put, Output)
+#[train, test] = split_train_test(in_put)
 
-        #print (len(train_input))        
+
+train_1 = user_artist_data_zeros
+train_2 = np.full((len(user_artist_data_zeros), len(user_artist_data_zeros[0,:])), 0.0)
+
+
+for i in range(len(user_best_friend)):
+    index = int(user_best_friend[i])
+    train_2[i,:] = train_1[index,:]
+
+
+print (len(train_1))        
         #print (len(test))
 
+input_data = Input(shape=(input_dim,))
+input_best_friend = Input(shape=(input_dim,))
 
+concatLayer = concatenate([input_data, input_best_friend])
 
-        encoded = Dense(encoding_dim, activation='sigmoid',activity_regularizer=regularizers.l2(1e-3))(input_data)
+encoded = Dense(encoding_dim, activation='sigmoid',activity_regularizer=regularizers.l2(1e-3))(concatLayer)
         #encoded = Dense(encoding_dim, activation='sigmoid', activity_regularizer=regularizers.l1(1e-5))(encoded)
 
         #decoded = Dense(round(input_dim/100), activation='sigmoid')(encoded)
         #decoded = Dense(round(input_dim/10), activation='sigmoid')(decoded)
-        decoded = Dense(output_dim, activation='linear', activity_regularizer=regularizers.l2(1e-3))(encoded)
+decoded = Dense(output_dim, activation='linear', activity_regularizer=regularizers.l2(1e-3))(encoded)
         #decoded = Dense(input_dim, activation='linear', activity_regularizer=regularizers.l1(1e-5))(decoded)
 
         #, kernel_regularizer=regularizers.l2(.1)
 
         #mapping
-        autoencoder = Model(input_data, decoded)
+autoencoder = Model(inputs=[input_data, input_best_friend], outputs=decoded)
 
 
         # ver documentação keras
-        autoencoder.compile(optimizer='adadelta', loss=autoRec_loss) #'binary_crossentropy'
+autoencoder.compile(optimizer='adadelta', loss=autoRec_loss) #'binary_crossentropy'
 
         ##
         #dados do treino, dividir em teste e treino corretamente
         #x_train= data
         #x_test = data
+x_train= [train_1, train_2]
+#x_test = test       
 
-
-        autoencoder.fit(train_input, train_output,
-                        epochs=1,
-                        shuffle=True,
-                        batch_size=1,#,#256,
-                        #metrics=['mse'],
-                        validation_split=0.1
-                        )
+autoencoder.fit(x_train, train_1,
+                epochs=50,
+                shuffle=True,
+                batch_size=1,#,#256,
+                #metrics=['mse'],
+                validation_split=0.1
+                )
 
 # encode and decode some digits
 # note that we take them from the *test* set
 
-        
-        [x_test, dummy] = validation_split(test_input, 0.2)
+#test = 
+       
+#[x_test_proto, y_test] = validation_split(train_1, 0.2)
+[x_test_proto, y_test] = test_split(train_1, 2)
 
-        y_test_pred = autoencoder.predict(x_test)
+x_test = np.append(x_test_proto, train_2)
+
+y_test_pred = autoencoder.predict([x_test_proto, train_2])
         #decoded_data = decoder.predict(encoded_data)
 
-        autoencoder.evaluate(x_test, test_output)
+#autoencoder.evaluate([x_test_proto, train_2], y_test)
 
         #print(encoded_data)
 
-        print(max(x_test[0,:]))
+#print(max(x_test[0,:]))
         #print(max(x_test[1,:]))
 
-        print(max(y_test_pred[0,:]))
+#print(max(y_test_pred[0,:]))
 
-        y_testinho = y_test[0,:]
-        pred_test = y_test_pred[0,:]
+#y_testinho = y_test[0,:]
+#pred_test = y_test_pred[0,:]
 
-        print(test_accuracy(y_test,y_test_pred))
+print(test_accuracy(y_test,y_test_pred))
 
-        mask = np.nonzero(y_test[0,:])
+#mask = np.nonzero(y_test[0,:])
 
-        print(y_testinho[mask])
-        print(pred_test[mask])
+#print(y_testinho[mask])
+#print(pred_test[mask])
