@@ -11,11 +11,6 @@ def autoRec_loss(y_true,y_pred):
     zero = K.constant(0.0, dtype='float32')
     mask = K.not_equal(y_true, zero)
     return K.sum(K.square(tf.boolean_mask(y_true - y_pred, mask)), axis=-1)
-        #y_true_rectified = tf.boolean_mask(tf.convert_to_tensor(y_true, dtype='float32'), mask)
-    #y_pred_rectified = tf.boolean_mask(tf.convert_to_tensor(y_pred, dtype='float32'), mask)
-    #return K.reduced_sum(K.square(y_true_rectified - y_pred_rectified), axis=-1)
-    
-    
 
         
 def split_train_test(data):
@@ -27,7 +22,6 @@ def split_train_test(data):
         index = random.randrange(len(copyData))
         test[i]= copyData[index]
         np.delete(copyData,index)
-    #new_data= np.delete(copyData, test)
 
     train = copyData#new_data#copyData
     return [train, test]
@@ -45,7 +39,6 @@ def validation_split(val, percentage):
         for j in range(sliceX):
             index = random.randrange(length)
             val_entry[i,entryObservations[0][index]] = 0
-            #length-=1
 
     return [val_entry, val_expect]
 
@@ -62,7 +55,6 @@ def test_split(val, value):
             for j in range(sliceX):
                 index = random.randrange(length)
                 val_entry[i,entryObservations[0][index]] = 0
-                #length-=1
 
     return [val_entry, val_expect]
 
@@ -72,16 +64,7 @@ def test_accuracy(y_pred,y_true):
     y_pred_rectified = y_pred[mask]
     y_true_rectified = y_true[mask]
     return sqrt(sum((y_pred_rectified - y_true_rectified)**2)/len(y_true_rectified))
-    #y_pred_rectified = y_pred[y_true > 0]
-    #y_true_rectified = y_true[y_true > 0]
-    
-    #return K.mean(K.square(K.sum((y_true - y_pred))))
 
-
-
-#list_of_files = [('../lastFM/fooData/foo.dat'), ('../lastFM/fooData/foo_friends.dat')]
-
-#datalist = [(pylab.loadtxt(filename), label) for filename, label in list_of_files ]
 
 
 user_best_friend = np.genfromtxt('../lastFM/fooData/best_friend_index.dat',
@@ -91,32 +74,15 @@ user_best_friend = np.genfromtxt('../lastFM/fooData/best_friend_index.dat',
 user_artist_data_zeros = np.genfromtxt('../lastFM/fooData/foo_with_zeros.dat',
                      dtype=None,
                      delimiter=' ')
-    #print(data)
 
-    
-
-
-        #data = np.asarray(data[0])
-        #print(data)
 input_size= len(user_artist_data_zeros)
 input_dim = len(user_artist_data_zeros[0,:])
 output_dim = len(user_artist_data_zeros[0,:])
 
-        #print('sou lindo ')
-print(input_dim)
-print(input_size)
+#print(input_dim)
+#print(input_size)
 
-
-
-encoding_dim = 50 #size of the encoding representation. Must tune this up
-
-        #input_dim = 20000 #ver depois
-
-
-
-        #split NAO tah funfando direito
-#[train, test] = split_train_test(in_put)
-
+encoding_dim = 50 
 
 train_1 = user_artist_data_zeros
 train_2 = np.full((len(user_artist_data_zeros), len(user_artist_data_zeros[0,:])), 0.0)
@@ -126,75 +92,35 @@ for i in range(len(user_best_friend)):
     index = int(user_best_friend[i])
     train_2[i,:] = train_1[index,:]
 
-
-print (len(train_1))        
-        #print (len(test))
+#print (len(train_1))        
 
 input_data = Input(shape=(input_dim,))
 input_best_friend = Input(shape=(input_dim,))
-
 concatLayer = concatenate([input_data, input_best_friend])
-
 encoded = Dense(encoding_dim, activation='sigmoid',activity_regularizer=regularizers.l2(1e-3))(concatLayer)
-        #encoded = Dense(encoding_dim, activation='sigmoid', activity_regularizer=regularizers.l1(1e-5))(encoded)
-
-        #decoded = Dense(round(input_dim/100), activation='sigmoid')(encoded)
-        #decoded = Dense(round(input_dim/10), activation='sigmoid')(decoded)
 decoded = Dense(output_dim, activation='linear', activity_regularizer=regularizers.l2(1e-3))(encoded)
-        #decoded = Dense(input_dim, activation='linear', activity_regularizer=regularizers.l1(1e-5))(decoded)
-
-        #, kernel_regularizer=regularizers.l2(.1)
 
         #mapping
 autoencoder = Model(inputs=[input_data, input_best_friend], outputs=decoded)
 
-
-        # ver documentação keras
 autoencoder.compile(optimizer='adadelta', loss=autoRec_loss) #'binary_crossentropy'
 
-        ##
-        #dados do treino, dividir em teste e treino corretamente
-        #x_train= data
-        #x_test = data
+
 x_train= [train_1, train_2]
 #x_test = test       
 
 autoencoder.fit(x_train, train_1,
-                epochs=50,
+                epochs=100,
                 shuffle=True,
-                batch_size=1,#,#256,
-                #metrics=['mse'],
+                batch_size=1,
                 validation_split=0.1
                 )
 
-# encode and decode some digits
-# note that we take them from the *test* set
-
-#test = 
-       
-#[x_test_proto, y_test] = validation_split(train_1, 0.2)
+#
 [x_test_proto, y_test] = test_split(train_1, 2)
 
 x_test = np.append(x_test_proto, train_2)
 
 y_test_pred = autoencoder.predict([x_test_proto, train_2])
-        #decoded_data = decoder.predict(encoded_data)
-
-#autoencoder.evaluate([x_test_proto, train_2], y_test)
-
-        #print(encoded_data)
-
-#print(max(x_test[0,:]))
-        #print(max(x_test[1,:]))
-
-#print(max(y_test_pred[0,:]))
-
-#y_testinho = y_test[0,:]
-#pred_test = y_test_pred[0,:]
 
 print(test_accuracy(y_test,y_test_pred))
-
-#mask = np.nonzero(y_test[0,:])
-
-#print(y_testinho[mask])
-#print(pred_test[mask])

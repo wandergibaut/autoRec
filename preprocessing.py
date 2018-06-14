@@ -8,18 +8,15 @@ artists_number = 18745 #from file
 users_number = 2100 # from file
 max_users_conections = 25434 # from file
 
-#list_of_files = [('DeathsNVictories_1.txt', 'Time Evolution - simpleRL fullBase'),('DeathsNVictories_1WF.txt', 'Time Evolution - wandercogFull fullBase')]
-#list_of_files = [('../lastFM/user_artists.dat', 'simpleRL')]
+
 list_of_files = [('../lastFM/user_friends.dat')]#('../lastFM/user_artists.dat'), ('../lastFM/user_friends.dat')]
 
-#datalist = [(pylab.loadtxt(filename), label) for filename, label in list_of_files ]
 
 
 
 for file in list_of_files:
 	data = np.genfromtxt(file,
-                     #skip_header=1,
-                     #skip_footer=1,
+
                      names=True,
                      dtype=None,
                      delimiter='	')
@@ -54,28 +51,24 @@ for file in list_of_files:
 		users_rating = np.asarray(temp_all_users_rating)
 
 
-		print(users_rating)
+		#print(users_rating)
 
 
 		######## norm
 		for i in range(0,len(users_rating)):
-			#print(users_rating.size)
+
 			max = np.max(users_rating[i,:])
-			#print(users_rating[i,:])
-			#print(users_rating[i,52]/max)
+
 
 			users_rating[i,:] = (users_rating[i,:]/max)*5.0
 	
-			#print(users_rating[i,52])
-	
-			#print(max)
+
 
 		np.savetxt("../lastFM/fooData/foo.dat", users_rating,fmt='%.4f')
 
 
 	elif file == '../lastFM/user_friends.dat':
 
-		print('sou lindo!')
 
 		#temp_all_users_rating = []
 
@@ -85,22 +78,11 @@ for file in list_of_files:
 		for entry in data:
 
 			temp_user_friend_matrix[entry[0]-1,entry[1]-1] = 1 #f
-		#	else:
-		#		last_user = user # atualiza o user
-
-		#		temp_all_users_rating.append(temp_user_rating)
-		#		temp_user_rating = np.full((artists_number),0.0) # reinicializa o temp user		
-		
-		#		temp_user_rating[entry[1]] = entry[2]#float(entry[2])
 
 
-		#temp_all_users_rating.append(temp_user_rating)
-
-
-		#users_rating = np.asarray(temp_all_users_rating)
 		users_friend_matrix = temp_user_friend_matrix
 
-		print(users_friend_matrix)
+		#print(users_friend_matrix)
 
 		temp_user_weight = np.full((users_number),0.0)
 		for i in range(users_number):
@@ -120,7 +102,7 @@ for file in list_of_files:
 		for i in range (users_number):
 			best_friend_index[i] = np.argmax(user_friend_weights[i,:])
 
-		print(temp_user_weight)
+		#print(temp_user_weight)
 		np.savetxt("../lastFM/fooData/friends_matrix.dat", users_friend_matrix,fmt='%.1f')
 		np.savetxt("../lastFM/fooData/friends_weights.dat", temp_user_weight,fmt='%.8f')
 		np.savetxt("../lastFM/fooData/friends_matrix_weights.dat", user_friend_weights,fmt='%.8f')
